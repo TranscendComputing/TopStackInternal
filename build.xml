@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="ASInternal" basedir="." default="war.all">
+
+	<property file="${user.home}/${project.name}.properties"/>
+	<property file="${user.home}/build.properties"/>
+	<property name="config.filename" value="${user.name}.properties"/>
+	<property file="config/${config.filename}"/>
+
+	<property name="name" value="ASInternal" />
+	<property name="project.base.dir" value="." />
+	<property name="src" value="${project.base.dir}/src" />
+	<property name="resources" value="${project.base.dir}/resources" />
+	<property name="WebContent" value="${project.base.dir}/WebContent" />
+	<property name="test" value="${project.base.dir}/test" />
+	<property name="build" value="${project.base.dir}/build" />
+	<property name="war" value="${build}/war" />
+	<property name="classes" value="${war}/WEB-INF/classes" />
+	<property name="warlib" value="${war}/WEB-INF/lib" />
+	<property name="war.meta-inf" value="${war}/META-INF" />
+	<property name="lib" value="${build}/lib" />
+	<property name="external" value="${build}/external" />
+    <property name="external.dir" location="${external}" />
+	<property name="external.jars" value="${build}/external/lib" />
+	<property name="external.lib" value="${build}/external/lib" />
+	<property name="resources" value="${project.base.dir}/resources" />
+	<property value="" name="jars.ok" />
+	<property name="hudson.url" value="jenkins.momentumsoftware.com:8080/" />
+
+    <property name="maven.compat" value="true" />
+
+    <property name="dist.suffix" value="" />
+    <property name="toughresources" value="TopStackResources${dist.suffix}" />
+    <property name="toughresources.dir" value="${project.base.dir}/../${toughresources}"/>
+    <import file="${toughresources.dir}/common.build.xml" />
+
+	<target name="init">
+		<mkdir dir="${build}" />
+		<mkdir dir="${classes}" />
+		<mkdir dir="${warlib}" />
+		<mkdir dir="${war.meta-inf}" />
+		<mkdir dir="${lib}" />
+		<mkdir dir="${external}" />
+		<mkdir dir="${external.lib}" />
+	</target>
+
+	<target name="war.all" depends="compile.src, copy.config, copyWebContent">
+		<war.all.maven/>
+	</target>
+
+    <target name="maven.deploy" depends="dist, maven.deploy.war">
+    </target>
+
+</project>

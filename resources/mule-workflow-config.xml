@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xmlns:protobuf="http://www.mulesoft.org/schema/mule/protobuf"
+      xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+      xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/protobuf http://www.mulesoft.org/schema/mule/protobuf/current/mule-protobuf.xsd
+        http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+    <description>
+    This configuration uses REST services and ZeroMQ endpoints to receive
+    requests.
+    </description>
+
+    <configuration>
+    <default-threading-profile maxThreadsActive="3"/>
+    </configuration>
+
+    <custom-transformer name="ExceptionToString" class="com.msi.tough.workflow.core.ExceptionToString"/>
+    <custom-transformer name="ExceptionToErrorResponse" class="com.msi.tough.workflow.core.ExceptionToErrorResponse"/>
+    <custom-transformer name="HttpRequestToParameter" class="org.mule.transport.servlet.transformers.HttpRequestToParameter"/>
+    <custom-transformer name="ObjectToString" class="org.mule.transformer.simple.ObjectToString"/>
+
+    <spring:bean id="muleWorkflow" factory-method="getInstance"
+    class="com.msi.tough.workflow.core.MuleWorkflow">
+    </spring:bean>
+    <spring:bean id="zmqReturnProcessor" factory-method="getInstance"
+    destroy-method="destroy"
+    class="com.msi.tough.workflow.core.RemoteWorkflowResponder">
+    </spring:bean>
+
+    <!-- Global exception strategy; return an error response to requestor -->
+    <custom-exception-strategy name="sendErrorBack" class="com.msi.tough.workflow.core.MuleExceptionStrategy">
+            <outbound-endpoint ref="SystemErrorHandlerIn"/>
+    </custom-exception-strategy>
+
+    <!-- Global exception strategy; record abnormal termination of async tasks -->
+    <!-- TODO: async error recording -->
+
+    <!-- === Zero MQ processing === -->
+    <flow name="ZMQEntry">
+        <inbound-endpoint ref="DirectToZMQEntry"/>
+        <set-session-variable variableName="returnAddress" value="#[payload[1]]"/>
+        <expression-transformer evaluator="groovy" expression="payload[0]"/>
+        <first-successful>
+            <protobuf:deserialize protobufClass="com.msi.tough.message.CoreMessage$ErrorResult"/>
+        </first-successful>
+        <log-component />
+        <flow-ref name="ActionEntry"/>
+        <catch-exception-strategy>
+            <outbound-endpoint ref="SystemErrorHandlerIn"/>
+
+        </catch-exception-strategy>
+    </flow>
+
+    <!-- === Standard Action entry point processing === -->
+    <flow name="ActionEntry">
+        <inbound-endpoint ref="ActionIn"/>
+        <log-component />
+        <choice>
+            <when expression="payload instanceof com.msi.tough.message.CoreMessage$ErrorResult" evaluator="groovy">
+                <flow-ref name="SystemErrorHandler"/>
+            </when>
+            <otherwise>
+                <flow-ref name="SystemErrorHandler"/>
+            </otherwise>
+        </choice>
+    </flow>
+
+    <!-- === Individual actions follow === -->
+
+    <!-- General system flows -->
+
+    <flow name="ZMQResponder">
+        <log-component />
+        <processor ref="zmqReturnProcessor"/>
+    </flow>
+
+    <flow name="ClientResponder">
+        <component>
+            <spring-object bean="asInternalServiceAsync"/>
+        </component>
+    </flow>
+
+    <!-- Handle any unexpected errors. Errors could also be routed elsewhere,
+        e.g. into an error file, send via email to a list, stored in a database, etc. -->
+    <flow name="SystemErrorHandler">
+        <inbound-endpoint ref="SystemErrorHandlerIn"/>
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <flow-ref name="ClientResponder"/>
+            </otherwise>
+        </choice>
+    </flow>
+
+</mule>
