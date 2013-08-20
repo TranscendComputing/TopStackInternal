@@ -1,40 +1,28 @@
+/*
+ * TopStack (c) Copyright 2012-2013 Transcend Computing, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the License);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.msi.tough.internal.autoscale.hedwig;
 
-/*
-import org.apache.hedwig.client.netty.HedwigClient;
-import org.apache.hedwig.client.netty.HedwigPublisher;
-import org.apache.hedwig.exceptions.PubSubException.CouldNotConnectException;
-import org.apache.hedwig.exceptions.PubSubException.ServiceDownException;
-import org.apache.hedwig.protocol.PubSubProtocol.Message;
-
-import com.google.protobuf.ByteString;
-import com.msi.tough.monitor.common.Constants;
-import com.msi.tough.monitor.common.hedwig.*;*/
-
 public class ASHedwigClient {
-	/*HedwigConf hconf;
-	HedwigClient hclient;
-	HedwigPublisher pub;*/
-	
+
 	public ASHedwigClient(){
-		/*hconf = new HedwigConf();
-		hclient = new HedwigClient(hconf);
-		pub = hclient.getPublisher();*/
 	}
-	
+
 	public void publish(String groupName, String metricName, String value, String timeInMillis){
-		/*String msg = groupName+" "+metricName+" "+value+" "+timeInMillis;
-		try {
-			pub.publish(ByteString.copyFromUtf8(Constants.AS_TOPIC), Message.newBuilder().setBody(
-			ByteString.copyFromUtf8(msg)).build());
-		} catch (CouldNotConnectException e) {
-			e.printStackTrace();
-		} catch (ServiceDownException e) {
-			e.printStackTrace();
-		}*/
 	}
-	
+
 	public void stop(){
-		/*hclient.stop();*/
 	}
 }

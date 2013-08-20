@@ -1,3 +1,18 @@
+/*
+ * TopStack (c) Copyright 2012-2013 Transcend Computing, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the License);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.msi.tough.internal.autoscale.helper;
 
 import java.util.HashMap;
@@ -13,7 +28,6 @@ import com.msi.tough.model.AccountBean;
 import com.msi.tough.query.ActionRequest;
 import com.msi.tough.query.ActionTestHelper;
 import com.msi.tough.query.ErrorResponse;
-import com.msi.tough.security.AESSecurity;
 
 /**
  * Account helper for non-web tests (using actions in-VM).
@@ -24,8 +38,7 @@ import com.msi.tough.security.AESSecurity;
 @Component
 public class AccountLocalHelper {
 
-    private static Map<String,AccountBean> userAccounts =
-            new HashMap<String,AccountBean>();
+    private static Map<String, AccountBean> userAccounts = new HashMap<String, AccountBean>();
 
     private static ActionTestHelper actionHelper = null;
 
@@ -60,8 +73,8 @@ public class AccountLocalHelper {
      *
      * @param userName
      */
-    public static void createAccount(String userName,
-            String accessKey, String secretKey) throws Exception {
+    public static void createAccount(String userName, String accessKey,
+            String secretKey) throws Exception {
         CreateAccountRequest putRequest = createAccountRequest(userName);
         putRequest.put("AccessKey", accessKey);
         putRequest.put("SecretKey", secretKey);
@@ -69,11 +82,11 @@ public class AccountLocalHelper {
         putRequest.put("APIPassword", secretKey);
         CreateAccount createAccount = new CreateAccount();
         String ret = actionHelper.invokeProcess(createAccount,
-                    putRequest.getRequest(), putRequest.getResponse(),
-                    putRequest.getMap());
+                putRequest.getRequest(), putRequest.getResponse(),
+                putRequest.getMap());
         if (!JsonUtil.isValidJSON(ret)) {
-            throw new IllegalStateException("Unexpected failure " +
-                    "creating account.");
+            throw new IllegalStateException("Unexpected failure "
+                    + "creating account.");
         }
         AccountBean account = new AccountBean();
         final String id = JsonUtil.getValueFromJSON(ret, "Id");
@@ -94,7 +107,7 @@ public class AccountLocalHelper {
         final DeleteAccountRequest request = new DeleteAccountRequest();
         request.put("AccessKey", account.getAccessKey());
         request.put("SecretKey", account.getSecretKey());
-        request.put("Id", account.getId()+"");
+        request.put("Id", account.getId() + "");
         return request;
     }
 
@@ -114,9 +127,8 @@ public class AccountLocalHelper {
         }
         DeleteAccountRequest request = deleteAccountRequest(account);
         DeleteAccount deleteAccount = new DeleteAccount();
-        actionHelper.invokeProcess(deleteAccount,
-                request.getRequest(), request.getResponse(),
-                request.getMap());
+        actionHelper.invokeProcess(deleteAccount, request.getRequest(),
+                request.getResponse(), request.getMap());
         userAccounts.remove(accessKey);
     }
 
@@ -130,27 +142,27 @@ public class AccountLocalHelper {
         userAccounts.clear();
     }
 
-    @Autowired(required=true)
+    @Autowired(required = true)
     public void setActionTestHelper(ActionTestHelper actionTestHelper) {
         AccountLocalHelper.actionHelper = actionTestHelper;
     }
 
-    @Autowired(required=true)
+    @Autowired(required = true)
     public void setAccessKey(String accessKey) {
         AccountLocalHelper.accessKey = accessKey;
     }
 
-    @Autowired(required=true)
+    @Autowired(required = true)
     public void setSecretKey(String secretKey) {
         AccountLocalHelper.secretKey = secretKey;
     }
 
-    @Autowired(required=true)
+    @Autowired(required = true)
     public void setDefaultAvailabilityZone(String defaultAvailabilityZone) {
         AccountLocalHelper.defaultAvailabilityZone = defaultAvailabilityZone;
     }
 
-    @Autowired(required=true)
+    @Autowired(required = true)
     public void setTenant(String tenant) {
         AccountLocalHelper.tenant = tenant;
     }

@@ -1,8 +1,22 @@
+/*
+ * TopStack (c) Copyright 2012-2013 Transcend Computing, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the License);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.msi.tough.internal.autoscale.integration;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Map;
 import java.util.UUID;
 
 import org.junit.After;
@@ -25,11 +39,11 @@ import com.msi.tough.query.ErrorResponse;
 
 public class CreateAccountTest extends AbstractBaseAutoscaleTest {
 
-    private static Logger logger = Appctx
-            .getLogger(CreateAccountTest.class.getName());
+    private static Logger logger = Appctx.getLogger(CreateAccountTest.class
+            .getName());
 
-    private final String userName = "create:" + UUID.randomUUID().toString()
-            .substring(0, 8);
+    private final String userName = "create:"
+            + UUID.randomUUID().toString().substring(0, 8);
 
     @Autowired
     public String endpoint;
@@ -70,8 +84,8 @@ public class CreateAccountTest extends AbstractBaseAutoscaleTest {
     @Test
     public void testCreateAccountMissingInfo() {
         final HttpRequest request = new HttpRequest(HttpMethodName.GET);
-        request.withParameter("Action", "CreateAccount")
-            .withParameter("AccessKey", "sadfsdaf");
+        request.withParameter("Action", "CreateAccount").withParameter(
+                "AccessKey", "sadfsdaf");
         String result = new HttpUtils().sendGetRequest(endpoint,
                 request.getParameters());
         assertEquals("Insufficient Data", result);
@@ -80,8 +94,7 @@ public class CreateAccountTest extends AbstractBaseAutoscaleTest {
     @Test
     public void testCreateAccount() throws Exception {
         logger.info("Create account at: " + endpoint);
-        AccountHelper.createAccount(userName,
-                testUser1.getAWSAccessKeyId(),
+        AccountHelper.createAccount(userName, testUser1.getAWSAccessKeyId(),
                 testUser1.getAWSSecretKey());
     }
 
