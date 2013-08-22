@@ -39,6 +39,7 @@ import com.msi.tough.cf.ec2.InstanceType;
 import com.msi.tough.core.Appctx;
 import com.msi.tough.core.CommaObject;
 import com.msi.tough.core.MapUtil;
+import com.msi.tough.core.QueryBuilder;
 import com.msi.tough.core.StringHelper;
 import com.msi.tough.engine.aws.ec2.Instance;
 import com.msi.tough.engine.core.CallStruct;
@@ -60,7 +61,7 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
     private final static Logger logger = Appctx
             .getLogger(ProcessAutoScaling.class.getName());
 
-    private void addInstance(final Session s, final ASGroupBean grp,
+    private void addInstance(final Session session, final ASGroupBean grp,
             final AccountBean ac) throws Exception {
         final Date startTime = new Date();
         String avz = grp.getAvzones();
@@ -68,7 +69,7 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
             avz = ac.getDefZone();
         }
         final String slaunch = grp.getLaunchConfig();
-        final LaunchConfigBean lcb = ASUtil.readLaunchConfig(s, ac.getId(),
+        final LaunchConfigBean lcb = ASUtil.readLaunchConfig(session, ac.getId(),
                 slaunch);
         if (lcb == null) {
             logger.error("Launch Config Not found " + slaunch + " for ac "
@@ -96,8 +97,11 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
         logger.debug("Setting instanceType = " + instanceType);
 
         final Map<String, Object> prop = MapUtil.create(AVAILABILITYZONE, avz,
-                SECURITYGROUPIDS, lcb.getSecGrps(), IMAGEID, lcb.getImageId(),
-                INSTANCETYPE, instanceType);
+                SECURITYGROUPIDS, lcb.getSecGrps(),
+                IMAGEID, lcb.getImageId(),
+                INSTANCETYPE, instanceType,
+                AUTOSCALEGROUPID, grp.getId()
+                );
         if (lcb.getKernel() != null) {
             prop.put(KERNELID, lcb.getKernel());
         }
@@ -120,11 +124,6 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
         call.setType(Instance.TYPE);
         // launch instance
         final InstanceType res = (InstanceType) CFUtil.createResource(call);
-        final CommaObject instances = new CommaObject(grp.getInstances());
-        // save the grp instance
-        instances.add(res.getInstanceId());
-        grp.setInstances(instances.toString());
-        s.save(grp);
         final ASActivityLog log = new ASActivityLog();
         log.setCause("AutoScaling");
         log.setDescription("Instance added  " + res.getInstanceId());
@@ -136,7 +135,7 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
         log.setStatusCode("Successful");
         log.setStatusMsg("Successful");
         log.setUserId(ac.getId());
-        s.save(log);
+        session.save(log);
     }
 
     private List<InstanceBean> applyPolicy(final Session s,
@@ -207,35 +206,34 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
             final Query gq = s.createQuery("from ASGroupBean where userId="
                     + ac.getId());
             for (final ASGroupBean grp : (List<ASGroupBean>) gq.list()) {
-                final CommaObject instances = new CommaObject(
-                        grp.getInstances());
-                final int noinst = instances.toArray().length;
+                QueryBuilder builder = new QueryBuilder("from InstanceBean");
+                builder.equals("asGroup", grp);
+                builder.equals("health", "Healthy");
+                builder.toQuery(s);
+                List<InstanceBean> instances = builder.toQuery(s).list();
+                final int numinst = instances.size();
                 final long capacity = newCapacity(s, ac, grp);
-                int addInst = (int) capacity - noinst;
+                int addInst = (int) capacity - numinst;
                 String instId = null;
                 if (grp.getTerminateInstance() != null) {
                     addInst = -1;
                     instId = grp.getTerminateInstance();
                 }
                 logger.debug("Account " + ac.getId() + " Group " + grp.getId()
-                        + "Current instances=" + noinst + " desired capacity="
+                        + "Current instances=" + numinst + " desired capacity="
                         + capacity + " adding=" + addInst);
                 if (addInst > 0) {
                     addInstance(s, grp, ac);
                 } else if (addInst < 0) {
                     if (instId == null) {
-                        instId = removeInstance(s, ac, grp);
+                        instId = removeInstance(s, ac, grp, instances);
                     }
                     if (grp.getReduceCapacity() != null
                             && grp.getReduceCapacity() && grp.getCapacity() > 0) {
                         grp.setCapacity(grp.getCapacity() - 1);
                     }
-                    final CommaObject insts = new CommaObject(
-                            grp.getInstances());
                     CFUtil.deleteStackResources(AccountUtil.toAccount(ac),
                             grp.getStackId(), grp.getName(), instId);
-                    insts.remove(instId);
-                    grp.setInstances(insts.toString());
                     grp.setTerminateInstance(null);
                     grp.setReduceCapacity(null);
                     s.save(grp);
@@ -247,7 +245,7 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
     }
 
     private String removeInstance(final Session s, final AccountBean ac,
-            final ASGroupBean grp) {
+            final ASGroupBean grp, List<InstanceBean> instances) {
         final Date startTime = new Date();
         final CommaObject policies = new CommaObject(
                 grp.getTerminationPolicies());
@@ -259,18 +257,13 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
                     "OldestLaunchConfiguration", "ClosestToNextInstanceHour",
                     "OldestInstance" }));
         }
-        final CommaObject insts = new CommaObject(grp.getInstances());
-        List<InstanceBean> linst = new ArrayList<InstanceBean>();
-        for (final String i : insts.toList()) {
-            linst.add(InstanceUtil.getInstance(s, i));
-        }
         for (final String policy : policies.toList()) {
-            if (linst.size() == 1) {
+            if (instances.size() == 1) {
                 break;
             }
-            linst = applyPolicy(s, ac, linst, policy);
+            instances = applyPolicy(s, ac, instances, policy);
         }
-        final String instId = linst.get(0).getInstanceId();
+        final String instId = instances.get(0).getInstanceId();
         final ASActivityLog log = new ASActivityLog();
         log.setCause("AutoScaling");
         log.setDescription("Instance removed " + instId);

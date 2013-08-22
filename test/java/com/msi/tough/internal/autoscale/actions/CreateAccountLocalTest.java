@@ -33,7 +33,7 @@ import com.msi.tough.internal.autoscale.helper.AccountLocalHelper.CreateAccountR
 import com.msi.tough.query.ActionTestHelper;
 
 /**
- * Test delete accounts locally.
+ * Test create accounts locally.
  *
  * @author jgardner
  *
@@ -54,6 +54,9 @@ public class CreateAccountLocalTest extends AbstractBaseAutoscaleTest {
 
     @Autowired
     public AWSCredentials testUser2;
+
+    @Autowired
+    String tenant = null;
 
     @Before
     @Transactional
@@ -94,22 +97,25 @@ public class CreateAccountLocalTest extends AbstractBaseAutoscaleTest {
     @After
     @Transactional
     public void cleanupCreated() throws Exception {
-        AccountLocalHelper.deleteAllCreatedAccounts();
     }
 
+    /**
+     * Convenience test to create accounts (remove ignore, run test).
+     * @throws Exception
+     */
     @Test
     @Ignore
     public void createOneOffAccount() throws Exception {
         String result = null;
         final CreateAccountRequest request = new CreateAccountRequest();
         CreateAccount createAccount = new CreateAccount();
-        request.put("UserName", "username_essex");
+        request.put("UserName", "username_at_cloudx");
         request.put("AccessKey", "username");
         request.put("SecretKey", "password");
-        request.put("CloudName", "nova");
+        request.put("CloudName", "cloud_name");
         request.put("APIUsername", "username");
         request.put("APIPassword", "password");
-        request.put("APITenant", "be344db2784445da9415d19c2bb31ac1");
+        request.put("APITenant", tenant);
         result = actionHelper.invokeProcess(createAccount,
                 request.getRequest(), request.getResponse(), request.getMap());
         assertEquals("DONE", result);
