@@ -1,0 +1,3 @@
+remote.internal.port=5550
+response.internal.port=5451
+response.compute.port=5452

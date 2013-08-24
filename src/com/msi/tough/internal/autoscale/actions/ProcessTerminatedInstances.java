@@ -15,47 +15,96 @@
  */
 package com.msi.tough.internal.autoscale.actions;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.hibernate.Query;
 import org.hibernate.Session;
+import org.slf4j.Logger;
 
+import com.msi.tough.core.Appctx;
+import com.msi.tough.core.QueryBuilder;
+import com.msi.tough.message.CoreMessage.ErrorResult;
+import com.msi.tough.model.AccountBean;
+import com.msi.tough.model.InstanceBean;
+import com.msi.tough.query.Action;
 import com.msi.tough.query.UnsecuredAction;
+import com.msi.tough.utils.AccountUtil;
+import com.msi.tough.workflow.WorkflowSubmitter;
+import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesRequestMessage;
+import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesResponseMessage;
+import com.transcend.compute.message.InstanceMessage.Instance;
+import com.transcend.compute.message.ReservationMessage.Reservation;
 
 public class ProcessTerminatedInstances extends UnsecuredAction {
+    private final static Logger logger = Appctx
+            .getLogger(ProcessTerminatedInstances.class);
 
-	@Override
-	public String process0(final Session s, final HttpServletRequest req,
-			final HttpServletResponse resp, final Map<String, String[]> map)
-			throws Exception {
-		// final Query qry = s.createQuery("from AccountBean");
-		// final List<AccountBean> list = qry.list();
-		// for (final AccountBean ac : list) {
-		// Account aco = AccountUtil.toAccount(ac);
-		// Query gq = s.createQuery("from ASGroupBean where userId="
-		// + ac.getId());
-		// for (final ASGroupBean grp : (List<ASGroupBean>) gq.list()) {
-		// String grpins = grp.getInstances();
-		// if (grpins == null || grpins.length() == 0) {
-		// continue;
-		// }
-		// CommaObject co = new CommaObject(grpins);
-		// for (String instanceId : co.toList()) {
-		// DescribeInstance di = new DescribeInstance();
-		// Instance inst = di.process(instanceId, aco);
-		// if (inst.getStatus().equals("terminated")) {
-		// AccountUtil.removeInstace(s, ac, instanceId);
-		// // update database
-		// CommaObject cog = new CommaObject(grp.getInstances());
-		// cog.remove(instanceId);
-		// grp.setInstances(cog.toString());
-		// s.save(grp);
-		// }
-		// }
-		// }
-		// }
-		return "";
-	}
+    /** How long to wait for describe. */
+    private static final int MAX_SECS = 30;
+
+    @Resource
+    private WorkflowSubmitter toCompute = null;
+
+    @Override
+    public String process0(final Session s, final HttpServletRequest req,
+            final HttpServletResponse resp, final Map<String, String[]> map)
+            throws Exception {
+        QueryBuilder builder = new QueryBuilder("from InstanceBean");
+        builder.equals("health", "Healthy");
+        final Query query = builder.toQuery(s);
+        @SuppressWarnings("unchecked")
+        final List<InstanceBean> list = query.list();
+        Map<String, InstanceBean> idToInstance = new HashMap<String, InstanceBean>();
+        for (InstanceBean instance : list) {
+            DescribeInstancesRequestMessage.Builder request =
+                    DescribeInstancesRequestMessage.newBuilder();
+            request.setTypeId(true);
+            idToInstance.put(instance.getInstanceId(), instance);
+            AccountBean account = AccountUtil.readAccount(s, instance.getUserId());
+            request.setCallerAccessKey(account.getAccessKey());
+            request.setRequestId(req.getRequestURI());
+            request.addInstanceIds(instance.getInstanceId());
+            DescribeInstancesResponseMessage response = null;
+            Object result = toCompute.submitAndWait(request.build(), MAX_SECS);
+            if (result instanceof DescribeInstancesResponseMessage) {
+                response = (DescribeInstancesResponseMessage) result;
+            } else if (result instanceof ErrorResult) {
+                ErrorResult error = (ErrorResult) result;
+                if ("InvalidInstance.NotFound".equals(error.getErrorCode())) {
+                    removeInstanceFromService(s, null,
+                            idToInstance.get(instance.getInstanceId()));
+                }
+                logger.debug("Got error describing instance: " + error.toString());
+                continue;
+            }
+            for (Reservation reservation : response.getReservationsList()) {
+                for (Instance found : reservation.getInstanceList()) {
+                    if (found.getState().getName() != "running") {
+                        removeInstanceFromService(s, found,
+                                idToInstance.get(instance.getInstanceId()));
+                    }
+                }
+            }
+        }
+        return Action.ACTION_SUCCESS;
+    }
+
+    private void removeInstanceFromService(Session s, Instance instance,
+            InstanceBean instanceBean) {
+        logger.info("Removing instance "+instanceBean.getInstanceId()+
+                " from service.");
+        instanceBean.setHealth("Unhealthy");
+        if (instance == null) {
+            instanceBean.setStatus("terminated");
+        } else {
+            instanceBean.setStatus(instance.getState().getName());
+        }
+        s.save(instanceBean);
+    }
 }
