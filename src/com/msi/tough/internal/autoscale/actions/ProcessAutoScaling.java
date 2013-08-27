@@ -219,8 +219,8 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
                     addInst = -1;
                     instId = grp.getTerminateInstance();
                 }
-                logger.debug("Account " + ac.getId() + " Group " + grp.getId()
-                        + "Current instances=" + numinst + " desired capacity="
+                logger.debug("Account " + ac.getId() + ", group " + grp.getId()
+                        + ", current=" + numinst + " desired capacity="
                         + capacity + " adding=" + addInst);
                 if (addInst > 0) {
                     addInstance(s, grp, ac);

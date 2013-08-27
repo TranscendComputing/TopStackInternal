@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import com.msi.tough.core.Appctx;
 import com.msi.tough.core.QueryBuilder;
 import com.msi.tough.message.CoreMessage.ErrorResult;
+import com.msi.tough.model.ASGroupBean;
 import com.msi.tough.model.AccountBean;
 import com.msi.tough.model.InstanceBean;
 import com.msi.tough.query.Action;
@@ -85,9 +86,11 @@ public class ProcessTerminatedInstances extends UnsecuredAction {
             }
             for (Reservation reservation : response.getReservationsList()) {
                 for (Instance found : reservation.getInstanceList()) {
-                    if (found.getState().getName() != "running") {
-                        removeInstanceFromService(s, found,
-                                idToInstance.get(instance.getInstanceId()));
+                    if (! found.getState().getName().equals("running")) {
+                        if (! found.getState().getName().equalsIgnoreCase("pending")) {
+                            removeInstanceFromService(s, found,
+                                    idToInstance.get(instance.getInstanceId()));
+                        }
                     }
                 }
             }
@@ -97,12 +100,15 @@ public class ProcessTerminatedInstances extends UnsecuredAction {
 
     private void removeInstanceFromService(Session s, Instance instance,
             InstanceBean instanceBean) {
+        ASGroupBean group = instanceBean.getAsGroup();
         logger.info("Removing instance "+instanceBean.getInstanceId()+
-                " from service.");
+                " from service in group " +
+                (group != null? group.getName() : "[none]"));
         instanceBean.setHealth("Unhealthy");
         if (instance == null) {
             instanceBean.setStatus("terminated");
         } else {
+            logger.info("Instance is "+ instance.getState());
             instanceBean.setStatus(instance.getState().getName());
         }
         s.save(instanceBean);
