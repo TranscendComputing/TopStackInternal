@@ -83,7 +83,7 @@ public class BootstrapChefRoles extends UnsecuredAction {
 				boolean ipFound = false;
 				while(!ipFound && failCount <= 5){
 					logger.debug("Attempting to get the public IP address of the target instance: " + failCount + "/5");
-					ipFound = HibernateUtil.withSession(new HibernateUtil.Operation<Boolean>() {
+					ipFound = HibernateUtil.withNewSession(new HibernateUtil.Operation<Boolean>() {
 						@Override
 						public Boolean ex(final Session s,
 								final Object... as) throws Exception {
@@ -99,13 +99,14 @@ public class BootstrapChefRoles extends UnsecuredAction {
 							return true;
 						}
 					});
+					logger.debug("*&* returned with " + ipFound);
 					++failCount;
 				}
 				if(!ipFound){
 					logger.debug("Public IP address of the target instance could not be retrieved, expect a halt!");
 				}
 
-				HibernateUtil.withSession(
+				HibernateUtil.withNewSession(
 						new HibernateUtil.Operation<Object>() {
 
 							@Override
@@ -154,10 +155,10 @@ public class BootstrapChefRoles extends UnsecuredAction {
 								}
 
 								// bootstrap chef: this will copy
-								// validation.pem, register client and node with
+								// chef-validator.pem, register client and node with
 								// chef, set role to CHEF_DEFAULT_ROLE
 								if (bootstrapChef) {
-									final String dotchef = (String) ConfigurationUtil
+								    final String dotchef = (String) ConfigurationUtil
 											.getConfiguration(Arrays
 													.asList(new String[] { "DOTCHEF_DIR" }));
 									final List<String> args = new ArrayList<String>();
@@ -184,7 +185,7 @@ public class BootstrapChefRoles extends UnsecuredAction {
 											"StrictHostKeyChecking=false",
 											"-o",
 											"UserKnownHostsFile=/dev/null",
-											"/etc/chef/validation.pem", "root@"
+											"/etc/chef/chef-validator.pem", "root@"
 													+ ip + ":/etc/chef");
 									CFUtil.executeCommand(acb, null, "ssh",
 											"-i", key, "-o",
