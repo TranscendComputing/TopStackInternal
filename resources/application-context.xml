@@ -61,6 +61,10 @@
                     <bean class="com.msi.tough.internal.autoscale.actions.CreateAccount">
                     </bean>
                 </entry>
+                <entry key="DescribeAccounts">
+                    <bean class="com.msi.tough.internal.autoscale.actions.DescribeAccounts">
+                    </bean>
+                </entry>
                 <entry key="DeleteAccount">
                     <bean class="com.msi.tough.internal.autoscale.actions.DeleteAccount">
                     </bean>
