@@ -39,6 +39,7 @@ import com.msi.tough.utils.AccountUtil;
 import com.msi.tough.workflow.WorkflowSubmitter;
 import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesRequestMessage;
 import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesResponseMessage;
+import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesRequestMessage.InstanceDescribeDepth;
 import com.transcend.compute.message.InstanceMessage.Instance;
 import com.transcend.compute.message.ReservationMessage.Reservation;
 
@@ -71,6 +72,7 @@ public class ProcessTerminatedInstances extends UnsecuredAction {
             request.setCallerAccessKey(account.getAccessKey());
             request.setRequestId(req.getRequestURI());
             request.addInstanceIds(instance.getInstanceId());
+            request.setInstanceDescribeDepth(InstanceDescribeDepth.BASIC_ONLY);
             DescribeInstancesResponseMessage response = null;
             Object result = toCompute.submitAndWait(request.build(), MAX_SECS);
             if (result instanceof DescribeInstancesResponseMessage) {
