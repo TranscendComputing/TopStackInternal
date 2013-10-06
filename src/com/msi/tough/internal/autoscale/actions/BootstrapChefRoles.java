@@ -190,7 +190,8 @@ public class BootstrapChefRoles extends UnsecuredAction {
                                             "StrictHostKeyChecking=false",
                                             "-o",
                                             "UserKnownHostsFile=/dev/null",
-                                            "/etc/chef/chef-validator.pem", "root@"
+                                            //FIXME:newchef"/etc/chef/chef-validator.pem", "root@"
+                                            "/etc/chef/validation.pem", "root@"
                                                     + ip + ":/etc/chef");
                                     CFUtil.executeCommand(acb, null, "ssh",
                                             "-i", key, "-o",

@@ -63,6 +63,10 @@
                     <bean class="com.msi.tough.internal.autoscale.actions.PublishASMetrics">
                     </bean>
                 </entry>
+                <entry key="BootstrapChefRoles">
+                    <bean class="com.msi.tough.internal.autoscale.actions.BootstrapChefRoles">
+                    </bean>
+                </entry>
                 <entry key="BootstrapDBInstance">
                     <bean class="com.msi.tough.internal.autoscale.actions.BootstrapDBInstance">
                 </bean>
