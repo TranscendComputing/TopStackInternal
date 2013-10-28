@@ -206,11 +206,7 @@ public class ProcessAutoScaling extends UnsecuredAction implements Constants {
             final Query gq = s.createQuery("from ASGroupBean where userId="
                     + ac.getId());
             for (final ASGroupBean grp : (List<ASGroupBean>) gq.list()) {
-                QueryBuilder builder = new QueryBuilder("from InstanceBean");
-                builder.equals("asGroup", grp);
-                builder.equals("health", "Healthy");
-                builder.toQuery(s);
-                List<InstanceBean> instances = builder.toQuery(s).list();
+                List<InstanceBean> instances = grp.getScaledInstances(s);
                 final int numinst = instances.size();
                 final long capacity = newCapacity(s, ac, grp);
                 int addInst = (int) capacity - numinst;

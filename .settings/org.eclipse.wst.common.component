@@ -7,6 +7,12 @@
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/test/resources"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/test/java"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/test/eclipse"/>
+        <dependent-module archiveName="tough-core-2.0.1-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/TopStackCore/TopStackCore">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="scheduler-2.0-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/TopStackScheduler/TopStackScheduler">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
         <property name="context-root" value="ASInternal"/>
         <property name="java-output-path" value="/ASInternal/build/classes"/>
     </wb-module>

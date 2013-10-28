@@ -53,9 +53,23 @@
                         class="com.msi.tough.internal.autoscale.actions.ProcessTerminatedInstances">
                     </bean>
                 </entry>
+                <entry key = "PostWait">
+                	<bean
+                		class="com.msi.tough.internal.autoscale.actions.PostWait">
+                	</bean>
+                </entry>
+                
                 <entry key="PublishASMetrics">
                     <bean class="com.msi.tough.internal.autoscale.actions.PublishASMetrics">
                     </bean>
+                </entry>
+                <entry key="BootstrapChefRoles">
+                    <bean class="com.msi.tough.internal.autoscale.actions.BootstrapChefRoles">
+                    </bean>
+                </entry>
+                <entry key="BootstrapDBInstance">
+                    <bean class="com.msi.tough.internal.autoscale.actions.BootstrapDBInstance">
+                </bean>
                 </entry>
                 <entry key="CreateAccount">
                     <bean class="com.msi.tough.internal.autoscale.actions.CreateAccount">
