@@ -9,3 +9,4 @@ message/
 message/*
 .mule
 /test/eclipse/*.properties
+*.ser
