@@ -68,6 +68,19 @@ public class CreateAccountTest extends AbstractBaseAutoscaleTest {
         _testUser1 = testUser1;
     }
 
+    @Before
+    @Transactional
+    public void cleanupLeftovers() throws Exception {
+        // Just in case, clean up previous accounts, before a run.
+        try {
+            AccountLocalHelper.deleteAccount(_testUser1.getAWSAccessKeyId());
+        } catch (ErrorResponse err) {
+            if (err.getCode() == ErrorResponse.CODE_RESOURCE_NOT_FOUND) {
+                return;
+            }
+        }
+    }
+
     @AfterClass
     public static void tearDown() throws Exception {
         // Just in case, delete our test account, in case it was left over
